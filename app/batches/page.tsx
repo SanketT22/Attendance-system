@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,48 +10,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Badge } from "@/components/ui/badge"
 import { Plus, Edit, Trash2, ArrowLeft, Users } from 'lucide-react'
 import Link from "next/link"
-
-interface Batch {
-  id: string
-  name: string
-  capacity: number
-  currentStudents: number
-  schedule: string
-  instructor: string
-  createdDate: string
-}
+import { database } from "@/lib/database"
+import { type Batch, type BatchWithStudentCount } from "@/lib/supabase" // Import Supabase types
 
 export default function BatchesPage() {
-  const [batches, setBatches] = useState<Batch[]>([
-    {
-      id: "batch1",
-      name: "Morning Batch A",
-      capacity: 35,
-      currentStudents: 32,
-      schedule: "9:00 AM - 12:00 PM",
-      instructor: "Prof. Smith",
-      createdDate: "2024-01-01"
-    },
-    {
-      id: "batch2",
-      name: "Evening Batch B",
-      capacity: 40,
-      currentStudents: 38,
-      schedule: "2:00 PM - 5:00 PM",
-      instructor: "Prof. Johnson",
-      createdDate: "2024-01-01"
-    },
-    {
-      id: "batch3",
-      name: "Weekend Batch C",
-      capacity: 30,
-      currentStudents: 25,
-      schedule: "10:00 AM - 1:00 PM (Sat-Sun)",
-      instructor: "Prof. Williams",
-      createdDate: "2024-01-15"
-    }
-  ])
-
+  const [batches, setBatches] = useState<BatchWithStudentCount[]>([])
+  const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null)
   const [formData, setFormData] = useState({
@@ -61,35 +25,49 @@ export default function BatchesPage() {
     instructor: ""
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Load data on component mount
+  useEffect(() => {
+    loadBatches()
+  }, [])
+
+  const loadBatches = async () => {
+    try {
+      setLoading(true)
+      const batchesData = await database.getBatchesWithStudentCount()
+      setBatches(batchesData)
+    } catch (error) {
+      console.error('Error loading batches:', error)
+      alert('Error loading batches. Please refresh the page.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (editingBatch) {
-      setBatches(batches.map(batch => 
-        batch.id === editingBatch.id 
-          ? { 
-              ...batch, 
-              name: formData.name,
-              capacity: parseInt(formData.capacity),
-              schedule: formData.schedule,
-              instructor: formData.instructor
-            }
-          : batch
-      ))
-    } else {
-      const newBatch: Batch = {
-        id: Date.now().toString(),
+    try {
+      const batchData = {
         name: formData.name,
         capacity: parseInt(formData.capacity),
-        currentStudents: 0,
         schedule: formData.schedule,
-        instructor: formData.instructor,
-        createdDate: new Date().toISOString().split('T')[0]
+        instructor: formData.instructor
       }
-      setBatches([...batches, newBatch])
+
+      if (editingBatch) {
+        await database.updateBatch(editingBatch.id, batchData)
+      } else {
+        await database.addBatch(batchData)
+      }
+      
+      // Refresh data
+      await loadBatches()
+      resetForm()
+      alert(editingBatch ? 'Batch updated successfully!' : 'Batch added successfully!')
+    } catch (error) {
+      console.error('Error saving batch:', error)
+      alert('Error saving batch. Please try again.')
     }
-    
-    resetForm()
   }
 
   const resetForm = () => {
@@ -114,8 +92,17 @@ export default function BatchesPage() {
     setIsDialogOpen(true)
   }
 
-  const handleDelete = (id: string) => {
-    setBatches(batches.filter(batch => batch.id !== id))
+  const handleDelete = async (id: string) => {
+    if (confirm("Are you sure you want to delete this batch? This will also unassign students from this batch.")) {
+      try {
+        await database.deleteBatch(id)
+        await loadBatches()
+        alert('Batch deleted successfully!')
+      } catch (error) {
+        console.error('Error deleting batch:', error)
+        alert('Error deleting batch. Please try again.')
+      }
+    }
   }
 
   const getCapacityStatus = (current: number, capacity: number) => {
@@ -123,6 +110,17 @@ export default function BatchesPage() {
     if (percentage >= 90) return "destructive"
     if (percentage >= 75) return "secondary"
     return "default"
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading batches...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -239,7 +237,7 @@ export default function BatchesPage() {
                     </div>
                     <div className="flex justify-between items-center pt-4">
                       <span className="text-sm text-muted-foreground">
-                        Created: {batch.createdDate}
+                        Created: {batch.created_date}
                       </span>
                       <div className="flex gap-2">
                         <Button

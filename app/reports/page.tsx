@@ -8,7 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Download, FileSpreadsheet, Calendar } from 'lucide-react'
 import Link from "next/link"
-import { dataStore, type Student, type Batch, type AttendanceRecord } from "@/lib/data-store"
+import { database } from "@/lib/database" // Import the database utility
+import { type Student, type Batch, type AttendanceRecord } from "@/lib/supabase" // Import Supabase types
 
 interface MonthlyReport {
   studentId: string
@@ -23,26 +24,44 @@ export default function ReportsPage() {
   const [students, setStudents] = useState<Student[]>([])
   const [batches, setBatches] = useState<Batch[]>([])
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([])
+  const [loading, setLoading] = useState(true)
   const [selectedBatch, setSelectedBatch] = useState<string>("")
-  const [selectedMonth, setSelectedMonth] = useState<string>("2024-01")
+  const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().slice(0, 7)) // Default to current month YYYY-MM
 
   // Load data on component mount
   useEffect(() => {
-    setStudents(dataStore.getStudents())
-    setBatches(dataStore.getBatches())
-    setAttendanceRecords(dataStore.getAttendanceRecords())
+    loadData()
   }, [])
+
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      const [studentsData, batchesData, attendanceData] = await Promise.all([
+        database.getStudents(),
+        database.getBatches(),
+        database.getAttendanceRecords()
+      ])
+      setStudents(studentsData)
+      setBatches(batchesData)
+      setAttendanceRecords(attendanceData)
+    } catch (error) {
+      console.error('Error loading report data:', error)
+      alert('Error loading report data. Please refresh the page.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const generateMonthlyReport = (): MonthlyReport[] => {
     if (!selectedBatch) return []
 
-    const batchStudents = students.filter(student => student.batchId === selectedBatch)
+    const batchStudents = students.filter(student => student.batch_id === selectedBatch)
     const monthRecords = attendanceRecords.filter(record => 
       record.date.startsWith(selectedMonth)
     )
 
     return batchStudents.map(student => {
-      const studentRecords = monthRecords.filter(record => record.studentId === student.id)
+      const studentRecords = monthRecords.filter(record => record.student_id === student.id)
       const presentDays = studentRecords.filter(record => record.present).length
       const totalDays = studentRecords.length
       const absentDays = totalDays - presentDays
@@ -131,7 +150,7 @@ export default function ReportsPage() {
       XLSX.writeFile(wb, filename)
       
       alert(`Excel file "${filename}" downloaded successfully!\n\nReport includes:\n- ${totalStudents} students\n- ${avgAttendance}% average attendance\n- Summary statistics`)
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error exporting to Excel:", error)
       alert(`Error exporting to Excel: ${error.message}`)
     }
@@ -149,6 +168,17 @@ export default function ReportsPage() {
     if (percentage >= 75) return "Good"
     if (percentage >= 60) return "Average"
     return "Poor"
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading reports data...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -204,12 +234,19 @@ export default function ReportsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      {/* You might want to dynamically generate months based on available data */}
                       <SelectItem value="2024-01">January 2024</SelectItem>
                       <SelectItem value="2024-02">February 2024</SelectItem>
                       <SelectItem value="2024-03">March 2024</SelectItem>
                       <SelectItem value="2024-04">April 2024</SelectItem>
                       <SelectItem value="2024-05">May 2024</SelectItem>
                       <SelectItem value="2024-06">June 2024</SelectItem>
+                      <SelectItem value="2024-07">July 2024</SelectItem>
+                      <SelectItem value="2024-08">August 2024</SelectItem>
+                      <SelectItem value="2024-09">September 2024</SelectItem>
+                      <SelectItem value="2024-10">October 2024</SelectItem>
+                      <SelectItem value="2024-11">November 2024</SelectItem>
+                      <SelectItem value="2024-12">December 2024</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
