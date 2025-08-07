@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, UserCheck, FileSpreadsheet, Calendar } from 'lucide-react'
+import { Users, UserCheck, FileSpreadsheet, Calendar, DollarSign, Wallet, ReceiptText } from 'lucide-react'
 import Link from "next/link"
 import { database } from "@/lib/database"
 
@@ -11,7 +11,10 @@ export default function Dashboard() {
     totalStudents: 0,
     totalBatches: 0,
     todayAttendance: 0,
-    attendanceRate: 0
+    attendanceRate: 0,
+    totalFees: 0,
+    totalFeesPaid: 0,
+    totalFeesDue: 0
   })
   const [loading, setLoading] = useState(true)
 
@@ -58,97 +61,132 @@ export default function Dashboard() {
         <div className="px-4 py-6 sm:px-0">
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card>
+            <Card className="hover:shadow-lg transition-shadow duration-300 ease-in-out border border-gray-200 dark:border-gray-700">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <Users className="h-5 w-5 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalStudents}</div>
-                <p className="text-xs text-muted-foreground">Across all batches</p>
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{stats.totalStudents}</div>
+                <p className="text-xs text-muted-foreground mt-1">Across all batches</p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="hover:shadow-lg transition-shadow duration-300 ease-in-out border border-gray-200 dark:border-gray-700">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Batches</CardTitle>
-                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <Calendar className="h-5 w-5 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalBatches}</div>
-                <p className="text-xs text-muted-foreground">Active batches</p>
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{stats.totalBatches}</div>
+                <p className="text-xs text-muted-foreground mt-1">Active batches</p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="hover:shadow-lg transition-shadow duration-300 ease-in-out border border-gray-200 dark:border-gray-700">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Today's Attendance</CardTitle>
-                <UserCheck className="h-4 w-4 text-muted-foreground" />
+                <UserCheck className="h-5 w-5 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.todayAttendance}</div>
-                <p className="text-xs text-muted-foreground">Students present</p>
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{stats.todayAttendance}</div>
+                <p className="text-xs text-muted-foreground mt-1">Students present</p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="hover:shadow-lg transition-shadow duration-300 ease-in-out border border-gray-200 dark:border-gray-700">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Attendance Rate</CardTitle>
-                <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
+                <FileSpreadsheet className="h-5 w-5 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.attendanceRate}%</div>
-                <p className="text-xs text-muted-foreground">This month</p>
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{stats.attendanceRate}%</div>
+                <p className="text-xs text-muted-foreground mt-1">This month</p>
+              </CardContent>
+            </Card>
+
+            {/* New Fee Stats Cards */}
+            <Card className="hover:shadow-lg transition-shadow duration-300 ease-in-out border border-gray-200 dark:border-gray-700">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Fees</CardTitle>
+                <DollarSign className="h-5 w-5 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">₹{stats.totalFees.toFixed(2)}</div> {/* Updated */}
+                <p className="text-xs text-muted-foreground mt-1">Total fees assigned</p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow duration-300 ease-in-out border border-gray-200 dark:border-gray-700">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Fees Collected</CardTitle>
+                <Wallet className="h-5 w-5 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-green-600 dark:text-green-400">₹{stats.totalFeesPaid.toFixed(2)}</div> {/* Updated */}
+                <p className="text-xs text-muted-foreground mt-1">Amount received</p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow duration-300 ease-in-out border border-gray-200 dark:border-gray-700">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Fees Pending</CardTitle>
+                <ReceiptText className="h-5 w-5 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-red-600 dark:text-red-400">₹{stats.totalFeesDue.toFixed(2)}</div> {/* Updated */}
+                <p className="text-xs text-muted-foreground mt-1">Outstanding amount</p>
               </CardContent>
             </Card>
           </div>
 
           {/* Quick Actions */}
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Link href="/students">
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <Link href="/students" className="block">
+              <Card className="h-full flex flex-col justify-between hover:shadow-lg hover:border-primary transition-all duration-300 ease-in-out cursor-pointer border border-gray-200 dark:border-gray-700">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
+                  <CardTitle className="flex items-center gap-3 text-lg">
+                    <Users className="h-6 w-6 text-primary" />
                     Manage Students
                   </CardTitle>
-                  <CardDescription>Add, edit, and manage student information</CardDescription>
+                  <CardDescription className="mt-2">Add, edit, and manage student information</CardDescription>
                 </CardHeader>
               </Card>
             </Link>
 
-            <Link href="/batches">
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <Link href="/batches" className="block">
+              <Card className="h-full flex flex-col justify-between hover:shadow-lg hover:border-primary transition-all duration-300 ease-in-out cursor-pointer border border-gray-200 dark:border-gray-700">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
+                  <CardTitle className="flex items-center gap-3 text-lg">
+                    <Calendar className="h-6 w-6 text-primary" />
                     Manage Batches
                   </CardTitle>
-                  <CardDescription>Create and organize student batches</CardDescription>
+                  <CardDescription className="mt-2">Create and organize student batches</CardDescription>
                 </CardHeader>
               </Card>
             </Link>
 
-            <Link href="/attendance">
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <Link href="/attendance" className="block">
+              <Card className="h-full flex flex-col justify-between hover:shadow-lg hover:border-primary transition-all duration-300 ease-in-out cursor-pointer border border-gray-200 dark:border-gray-700">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <UserCheck className="h-5 w-5" />
+                  <CardTitle className="flex items-center gap-3 text-lg">
+                    <UserCheck className="h-6 w-6 text-primary" />
                     Mark Attendance
                   </CardTitle>
-                  <CardDescription>Record daily student attendance</CardDescription>
+                  <CardDescription className="mt-2">Record daily student attendance</CardDescription>
                 </CardHeader>
               </Card>
             </Link>
 
-            <Link href="/reports">
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <Link href="/reports" className="block">
+              <Card className="h-full flex flex-col justify-between hover:shadow-lg hover:border-primary transition-all duration-300 ease-in-out cursor-pointer border border-gray-200 dark:border-gray-700">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileSpreadsheet className="h-5 w-5" />
+                  <CardTitle className="flex items-center gap-3 text-lg">
+                    <FileSpreadsheet className="h-6 w-6 text-primary" />
                     Generate Reports
                   </CardTitle>
-                  <CardDescription>Export monthly attendance reports</CardDescription>
+                  <CardDescription className="mt-2">Export monthly attendance reports</CardDescription>
                 </CardHeader>
               </Card>
             </Link>

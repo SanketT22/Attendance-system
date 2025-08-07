@@ -15,6 +15,9 @@ export interface Student {
   address: string
   batch_id: string | null
   enrollment_date: string
+  total_fees: number // Added
+  fees_paid: number // Added
+  fees_due: number // Added (will be calculated by DB trigger)
   created_at?: string
   updated_at?: string
 }

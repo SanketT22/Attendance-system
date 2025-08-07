@@ -16,7 +16,7 @@ export const database = {
     return data || []
   },
 
-  async addStudent(student: Omit<Student, 'id' | 'created_at' | 'updated_at'>): Promise<Student> {
+  async addStudent(student: Omit<Student, 'id' | 'fees_due' | 'created_at' | 'updated_at'>): Promise<Student> { // Modified Omit
     const { data, error } = await supabase
       .from('students')
       .insert([student])
@@ -31,7 +31,7 @@ export const database = {
     return data
   },
 
-  async updateStudent(id: string, updates: Partial<Student>): Promise<Student> {
+  async updateStudent(id: string, updates: Partial<Omit<Student, 'fees_due'>>): Promise<Student> { // Modified Partial Omit
     const { data, error } = await supabase
       .from('students')
       .update(updates)
@@ -217,11 +217,31 @@ export const database = {
         ? Math.round((monthlyRecords.filter(r => r.present).length / monthlyRecords.length) * 100)
         : 0
 
+      // Get total fees, fees paid, and fees due
+      const { data: feeData, error: feeError } = await supabase
+        .from('students')
+        .select('total_fees, fees_paid, fees_due')
+
+      let totalFees = 0
+      let totalFeesPaid = 0
+      let totalFeesDue = 0
+
+      if (feeData && !feeError) {
+        totalFees = feeData.reduce((sum, student) => sum + (student.total_fees || 0), 0)
+        totalFeesPaid = feeData.reduce((sum, student) => sum + (student.fees_paid || 0), 0)
+        totalFeesDue = feeData.reduce((sum, student) => sum + (student.fees_due || 0), 0)
+      } else if (feeError) {
+        console.error('Error fetching fee data:', feeError)
+      }
+
       return {
         totalStudents: totalStudents || 0,
         totalBatches: totalBatches || 0,
         todayAttendance: todayAttendance || 0,
-        attendanceRate
+        attendanceRate,
+        totalFees, // Added
+        totalFeesPaid, // Added
+        totalFeesDue // Added
       }
     } catch (error) {
       console.error('Error fetching dashboard stats:', error)
@@ -229,7 +249,10 @@ export const database = {
         totalStudents: 0,
         totalBatches: 0,
         todayAttendance: 0,
-        attendanceRate: 0
+        attendanceRate: 0,
+        totalFees: 0, // Added
+        totalFeesPaid: 0, // Added
+        totalFeesDue: 0 // Added
       }
     }
   }

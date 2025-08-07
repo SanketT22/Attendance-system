@@ -26,7 +26,9 @@ export default function StudentsPage() {
     mobile: "",
     parent_mobile: "",
     address: "",
-    batch_id: ""
+    batch_id: "",
+    total_fees: "0",
+    fees_paid: "0"
   })
 
   // Load data on component mount
@@ -55,11 +57,17 @@ export default function StudentsPage() {
     e.preventDefault()
     
     try {
+      const studentData = {
+        ...formData,
+        total_fees: parseFloat(formData.total_fees),
+        fees_paid: parseFloat(formData.fees_paid),
+      }
+
       if (editingStudent) {
-        await database.updateStudent(editingStudent.id, formData)
+        await database.updateStudent(editingStudent.id, studentData)
       } else {
         await database.addStudent({
-          ...formData,
+          ...studentData,
           enrollment_date: new Date().toISOString().split('T')[0]
         })
       }
@@ -81,7 +89,9 @@ export default function StudentsPage() {
       mobile: "",
       parent_mobile: "",
       address: "",
-      batch_id: ""
+      batch_id: "",
+      total_fees: "0",
+      fees_paid: "0"
     })
     setEditingStudent(null)
     setIsDialogOpen(false)
@@ -95,7 +105,9 @@ export default function StudentsPage() {
       mobile: student.mobile,
       parent_mobile: student.parent_mobile,
       address: student.address,
-      batch_id: student.batch_id || ""
+      batch_id: student.batch_id || "",
+      total_fees: student.total_fees.toString(),
+      fees_paid: student.fees_paid.toString()
     })
     setIsDialogOpen(true)
   }
@@ -116,6 +128,14 @@ export default function StudentsPage() {
   const getBatchName = (batchId: string | null) => {
     if (!batchId) return "No Batch"
     return batches.find(batch => batch.id === batchId)?.name || "Unknown Batch"
+  }
+
+  const getFeeStatusBadge = (feesDue: number) => {
+    if (feesDue <= 0) {
+      return <Badge variant="default" className="bg-green-500 hover:bg-green-500">Paid</Badge>
+    } else {
+      return <Badge variant="destructive">Pending</Badge>
+    }
   }
 
   if (loading) {
@@ -223,6 +243,29 @@ export default function StudentsPage() {
                         </SelectContent>
                       </Select>
                     </div>
+                    {/* New Fee Fields */}
+                    <div className="grid gap-2">
+                      <Label htmlFor="total_fees">Total Fees</Label>
+                      <Input
+                        id="total_fees"
+                        type="number"
+                        step="0.01"
+                        value={formData.total_fees}
+                        onChange={(e) => setFormData({...formData, total_fees: e.target.value})}
+                        required
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="fees_paid">Fees Paid</Label>
+                      <Input
+                        id="fees_paid"
+                        type="number"
+                        step="0.01"
+                        value={formData.fees_paid}
+                        onChange={(e) => setFormData({...formData, fees_paid: e.target.value})}
+                        required
+                      />
+                    </div>
                   </div>
                   <DialogFooter>
                     <Button type="button" variant="outline" onClick={resetForm}>
@@ -258,6 +301,10 @@ export default function StudentsPage() {
                     <TableHead>Parent's Mobile</TableHead>
                     <TableHead>Batch</TableHead>
                     <TableHead>Enrollment Date</TableHead>
+                    <TableHead>Total Fees</TableHead>
+                    <TableHead>Fees Paid</TableHead>
+                    <TableHead>Fees Due</TableHead>
+                    <TableHead>Fee Status</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -274,6 +321,10 @@ export default function StudentsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>{student.enrollment_date}</TableCell>
+                      <TableCell>₹{student.total_fees.toFixed(2)}</TableCell> {/* Updated */}
+                      <TableCell>₹{student.fees_paid.toFixed(2)}</TableCell> {/* Updated */}
+                      <TableCell>₹{student.fees_due.toFixed(2)}</TableCell> {/* Updated */}
+                      <TableCell>{getFeeStatusBadge(student.fees_due)}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
                           <Button
